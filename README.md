@@ -2,6 +2,10 @@
 
 I hope you like my repo name.  Shoutout to Github Co-Pilot for the assist on these docs.
 
+If you see any issues with the documentation, please create an issue or a pull request.  I'm always looking to improve my documentation and code.  I'm also open to suggestions on how to improve the documentation and code.  I'm always looking to learn new things and new ways to do things.
+
+Disclaimer: This is not a production ready setup.  This is a homelab setup.  I'm not responsible for any issues or trauma that arise from using this setup in a production environment.  Use at your own risk.
+
 # Homelab K8S Cluster with Cilium and Cloudflare
 
 Create your own Kubernetes cluster with Cilium and Cloudflare.  
