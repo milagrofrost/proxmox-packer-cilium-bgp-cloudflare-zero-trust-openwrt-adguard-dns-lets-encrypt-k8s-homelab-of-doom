@@ -1,0 +1,19 @@
+#❯ kubectl get service service-dir -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dir
+  name: service-dir
+  namespace: default
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: dir
+    port: 5800
+    protocol: TCP
+    targetPort: 5800
+  selector:
+    app: dir
+  type: LoadBalancer

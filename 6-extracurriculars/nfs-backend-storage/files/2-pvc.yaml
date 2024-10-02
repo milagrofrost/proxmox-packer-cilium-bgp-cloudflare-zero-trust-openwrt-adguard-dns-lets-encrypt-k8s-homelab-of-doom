@@ -1,0 +1,35 @@
+# ❯ kubectl get pvc nfs-dir -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeMode: Filesystem
+  volumeName: nfs-dir
+
+---
+
+# ❯ kubectl get pvc nfs-dir-ro-dir -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir-ro-dir
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeMode: Filesystem
+  volumeName: nfs-dir-ro-dir

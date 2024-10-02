@@ -1,0 +1,53 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway
+  namespace: default
+  annotations:
+    cert-manager.io/issuer: cloudflare-issuer
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: home1.frostbit.in
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http-home
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - protocol: HTTPS
+    hostname: home1.frostbit.in
+    port: 443
+    name: https-home
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-home
+    allowedRoutes:
+      namespaces:
+        from: Same
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route
+  namespace: default
+spec:
+  parentRefs:
+  - name: gateway-home
+    namespace: default
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: nginx-service
+      port: 80
+
+

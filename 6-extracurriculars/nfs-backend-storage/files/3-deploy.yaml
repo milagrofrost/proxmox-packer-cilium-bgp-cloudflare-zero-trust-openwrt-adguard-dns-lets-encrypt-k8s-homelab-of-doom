@@ -1,0 +1,37 @@
+# ❯ kubectl get deploy deploy-dir -o yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dir
+  name: deploy-dir
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dir
+  template:
+    metadata:
+      labels:
+        app: dir
+    spec:
+      containers:
+      - image: jlesage/qdirstat
+        name: container
+        ports:
+        - containerPort: 5800
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+        - mountPath: /storage
+          name: ro
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs-dir
+      - name: ro
+        persistentVolumeClaim:
+          claimName: nfs-dir-ro-dir

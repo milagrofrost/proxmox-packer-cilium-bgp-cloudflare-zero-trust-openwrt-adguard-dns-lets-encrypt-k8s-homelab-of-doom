@@ -1,0 +1,42 @@
+cluster_tunnel_name: k8s-cluster-tunnel
+root_domain: frostbit.in
+ingresses:
+  # router:
+  #   name: router
+  #   endpoint: 10.10.101.1
+  #   port: 80
+  #   backend_protocol: http
+  # adguard:
+  #   name: adguard
+  #   endpoint: 10.10.101.1
+  #   port: 8080
+  #   backend_protocol: http
+  # octopi:
+  #   name: octopi
+  #   endpoint: 10.10.101.200
+  #   port: 80
+  #   backend_protocol: http
+  hubble:
+    name: hubble
+    endpoint: hubble-ui.kube-system.svc.cluster.local
+    port: 80
+    backend_protocol: http
+  # unifi:
+  #   name: unifi
+  #   endpoint: service-unifi.default.svc.cluster.local
+  #   port: 8443
+  #   backend_protocol: https
+  # kube:
+  #   name: kube
+  #   endpoint: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local
+  #   port: 443
+  #   backend_protocol: https
+  # esxi:
+  #   name: esxi
+  #   endpoint: 10.10.101.11
+  #   port: 443
+  #   backend_protocol: https
+
+
+
+

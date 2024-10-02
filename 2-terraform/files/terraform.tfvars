@@ -1,0 +1,12 @@
+proxmox_username  = "root@pam"
+proxmox_password  = "password"
+vm_username       = "packer"
+vm_password       = "packer"
+proxmox_host_ip   = "10.10.101.250"
+k8s_master_ip     = "10.10.101.251"
+storage_pool_name = "local-lvm"
+subnet_gw         = "10.10.101.1"
+subnet_mask       = "/24"
+pve_node_name     = "proxiemoxie"
+k8s_worker_ips    = ["10.10.101.252", "10.10.101.253"]
+template_name     = "ubuntu-2404lts-k8s"

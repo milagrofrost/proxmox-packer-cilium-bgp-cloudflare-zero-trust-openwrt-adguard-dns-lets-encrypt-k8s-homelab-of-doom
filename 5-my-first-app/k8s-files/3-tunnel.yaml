@@ -1,0 +1,18 @@
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    cfargotunnel.com/kind: TunnelBinding
+    cfargotunnel.com/name: k8s-cluster-tunnel
+  name: tunnel-home
+subjects:
+- kind: Service
+  name: cilium-gateway-gateway
+  spec:
+    fqdn: home1.frostbit.in
+    noTlsVerify: false
+    target: http://cilium-gateway-gateway.default.svc:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel
+  

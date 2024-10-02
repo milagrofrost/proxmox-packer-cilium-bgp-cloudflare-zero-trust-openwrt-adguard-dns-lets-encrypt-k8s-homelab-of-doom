@@ -1,0 +1,39 @@
+apiVersion: v1
+data:
+  CLOUDFLARE_API_KEY: xxxCLOUDFLARE_API_KEYxxx
+  CLOUDFLARE_API_TOKEN: xxxCLOUDFLARE_API_TOKENxxx
+kind: Secret
+metadata:
+  name: cloudflare-secrets  # interlinked
+  namespace: cloudflare-operator-system
+type: Opaque
+
+---
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: ClusterTunnel
+metadata:
+  labels:
+    cfargotunnel.com/app: cloudflared
+    cfargotunnel.com/domain: frostbit.in
+    cfargotunnel.com/is-cluster-tunnel: "false"
+    cfargotunnel.com/name: k8s-cluster-tunnel
+    cfargotunnel.com/tunnel: k8s-cluster-tunnel
+  name: k8s-cluster-tunnel
+  namespace: cloudflare-operator-system
+spec:
+  cloudflare:
+    CLOUDFLARE_API_KEY: CLOUDFLARE_API_KEY
+    CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN
+    accountId: xxxaccountIdxxx # you can see this in the URL when you're logged in to Cloudflare https://dash.cloudflare.com/e27.......
+    domain: frostbit.in
+    email: milagrofrost@gmail.com
+    secret: cloudflare-secrets # interlinked
+  existingTunnel: {}
+  fallbackTarget: http_status:404
+  image: cloudflare/cloudflared:2024.9.1
+  newTunnel:
+    name: k8s-cluster-tunnel
+  noTlsVerify: false
+  protocol: auto
+  size: 2

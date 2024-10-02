@@ -1,0 +1,15 @@
+cloudflare_account_id = "xxxxxxxxxxxxxxxxx"
+cloudflare_api_token = "xxxxxxxxxxxxxxxxxxx"
+cloudflare_zone = "frostbit.in"
+allowed_emails = [
+    {
+      email = {
+        email = "milagrofrost@gmail.com"
+      }
+    },
+    {
+      email = {
+        email = "joemama@gmail.com"
+      }
+    }
+  ]

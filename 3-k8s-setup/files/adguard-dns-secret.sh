@@ -1,0 +1,1 @@
+  kubectl create secret generic adguard-configuration --from-literal=url='http://10.10.101.1:8080' --from-literal=user='root' --from-literal=password='password'

@@ -1,0 +1,48 @@
+# ❯ kubectl get pv nfs-dir -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+  labels:
+    app: dir
+  name: nfs-dir
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: nfs-dir
+    namespace: default
+  nfs:
+    path: /nfsshare/apps1/dir
+    server: 10.10.101.210
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+
+---
+
+# ❯ kubectl get pv nfs-dir-ro-dir -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir-ro-dir
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: nfs-dir-ro-dir
+    namespace: default
+  nfs:
+    path: /nfsshare/
+    server: 10.10.101.210
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
