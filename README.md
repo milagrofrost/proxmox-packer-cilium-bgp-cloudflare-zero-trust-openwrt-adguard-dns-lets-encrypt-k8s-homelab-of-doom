@@ -1,6 +1,6 @@
 # WORK IN PROGRESS!
 
-I hope you like my repo name.  Shoutout to Github Co-Pilot for the assist on these docs.
+I hope you like my repo name.  Shoutout to Github Co-Pilot for the assist on these docs.  And I blame Github Co-Pilot for any errors in the docs.  I could never.
 
 If you see any issues with the documentation, please create an issue or a pull request.  I'm always looking to improve my documentation and code.  I'm also open to suggestions on how to improve the documentation and code.  I'm always looking to learn new things and new ways to do things.
 
@@ -48,7 +48,7 @@ Example usage of how much core services will use:
 
 ## Setup Instructions
 
-- [Dependencies](0-dependencies/README.md)
+- [Dependencies](0-dependencies/)
   - A small list of manual, very general steps to get the environment ready for the automation.
 - [Packer](1-packer/README.md)
   - Create a Proxmox VM Ubuntu template by pulling an Ubuntu image from the internet and installing the necessary software.
