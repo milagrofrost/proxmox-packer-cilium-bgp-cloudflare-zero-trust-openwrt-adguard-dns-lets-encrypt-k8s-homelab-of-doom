@@ -1,6 +1,6 @@
 # WORK IN PROGRESS!
 
-I hope you like my repo name.  
+I hope you like my repo name.  Shoutout to Github Co-Pilot for the assist on these docs.
 
 # Homelab K8S Cluster with Cilium and Cloudflare
 
