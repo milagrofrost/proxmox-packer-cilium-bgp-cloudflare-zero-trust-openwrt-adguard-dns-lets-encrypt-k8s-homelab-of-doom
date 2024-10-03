@@ -66,7 +66,7 @@ The bare minimum requirements to run the core services ⚙️ and not any other 
 - [🎯 My First App](5-my-first-app/README.md)  
   Deploying and troubleshooting 🛠️ a simple app on the cluster. 🚀
 
-- [🤹‍♂️ Extracurricular](./6-extracurricular)  
+- [🤹‍♂️ Extracurriculars](./6-extracurriculars)  
   For funsies, 😄 some extra stuff to do with the cluster. 🎉
 
 ## 👤 Who am I?
