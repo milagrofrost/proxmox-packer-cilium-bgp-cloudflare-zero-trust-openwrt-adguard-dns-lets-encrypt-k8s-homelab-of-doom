@@ -48,7 +48,7 @@ The bare minimum requirements to run the core services ⚙️ and not any other 
 
 ## 📜 Setup Instructions
 
-- [📦 Dependencies](0-dependencies/)  
+- [📦 Dependencies](./0-dependencies/)  
   A small list of manual, very general steps to get the environment ready for automation. 🔧
   
 - [📦 Packer](1-packer/README.md)  
@@ -66,7 +66,7 @@ The bare minimum requirements to run the core services ⚙️ and not any other 
 - [🎯 My First App](5-my-first-app/README.md)  
   Deploying and troubleshooting 🛠️ a simple app on the cluster. 🚀
 
-- [🤹‍♂️ Extracurricular](6-extracurricular/)  
+- [🤹‍♂️ Extracurricular](./6-extracurricular)  
   For funsies, 😄 some extra stuff to do with the cluster. 🎉
 
 ## 👤 Who am I?
