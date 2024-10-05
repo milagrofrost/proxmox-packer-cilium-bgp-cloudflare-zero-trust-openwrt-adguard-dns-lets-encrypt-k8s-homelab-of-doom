@@ -68,7 +68,7 @@ X. **Join the Cluster:**
     kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
     ```
 
-6. **Install Cilium with Helm:**
+7. **Install Cilium with Helm:**
     - Change `--set k8sServiceHost="10.10.101.251"`  to your Master ip
     - At this time of documentation cilium version `1.16.1` is what was latest and tested in this setup
     ```sh
@@ -85,7 +85,7 @@ X. **Join the Cluster:**
         --set hubble.ui.enabled=true
     ```
 
-7. **Verify Cilium Deployment:**
+8. **Verify Cilium Deployment:**
     ```sh
     kubectl get pods -n kube-system
     # Make sure all Cilium pods start up. Give it +/- ten minutes.
@@ -96,13 +96,13 @@ X. **Join the Cluster:**
     # This will give you the status of the cilium deployment
     ```
 
-8. **Verify Nodes Again:**
+9. **Verify Nodes Again:**
     ```sh
     kubectl get nodes
     # Nodes should be ready now after Cilium is fully deployed.
     ```
 
-9. **Apply Load Balancer IP Pool**
+10. **Apply Load Balancer IP Pool**
    - Ensure that the `cidr` is not overlapping with any existing networks
 ```yaml
 apiVersion: cilium.io/v2alpha1

@@ -35,7 +35,6 @@ spec:
       addresses:
       - ExternalIP
       - LoadBalancerIP
-
 ```
 
 BGP cluster configs are where you 1-to-1 map the Cilium BGP peer to the router BGP peer.  This is where you define the ASN, peer address, and peer ASN.  The `nodeSelector` is used to select which nodes will participate in the BGP peering.  In this case, only Linux nodes will participate.  This policy applies to all nodes in the cluster.
