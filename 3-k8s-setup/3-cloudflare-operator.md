@@ -93,7 +93,7 @@ kubectl get pods -n cloudflare-operator-system
 
 - Check to make sure the tunnel is up
 ```sh
-kubectl get clustertunnel k3s-cluster-tunnel -n cloudflare-operator-system
+kubectl get clustertunnel k8s-cluster-tunnel -n cloudflare-operator-system
 ```
 
 ## Potential issues

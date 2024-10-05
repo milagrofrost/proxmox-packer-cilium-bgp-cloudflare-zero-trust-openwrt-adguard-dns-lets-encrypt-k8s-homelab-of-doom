@@ -28,44 +28,44 @@ webhook-provider-url: http://localhost:8888
 
 sidecars:
 - name: adguard-webhook
-    image: ghcr.io/muhlba91/external-dns-provider-adguard
-    ports:
-    - containerPort: 8888
-        name: http
-    livenessProbe:
-    httpGet:
-        path: /healthz
-        port: http
-    initialDelaySeconds: 10
-    timeoutSeconds: 5
-    readinessProbe:
-    httpGet:
-        path: /healthz
-        port: http
-    initialDelaySeconds: 10
-    timeoutSeconds: 5
-    env:
-    - name: LOG_LEVEL
-        value: debug
-    - name: ADGUARD_URL
-        valueFrom:
-        secretKeyRef:
-            name: adguard-configuration
-            key: url
-    - name: ADGUARD_USER
-        valueFrom:
-        secretKeyRef:
-            name: adguard-configuration
-            key: user
-    - name: ADGUARD_PASSWORD
-        valueFrom:
-        secretKeyRef:
-            name: adguard-configuration
-            key: password
-    - name: SERVER_HOST
-        value: "0.0.0.0" 
-    - name: DRY_RUN
-        value: "false"  
+  image: ghcr.io/muhlba91/external-dns-provider-adguard
+  ports:
+  - containerPort: 8888
+    name: http
+  livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 5
+  readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 5
+  env:
+  - name: LOG_LEVEL
+    value: debug
+  - name: ADGUARD_URL
+    valueFrom:
+      secretKeyRef:
+          name: adguard-configuration
+          key: url
+  - name: ADGUARD_USER
+    valueFrom:
+      secretKeyRef:
+          name: adguard-configuration
+          key: user
+  - name: ADGUARD_PASSWORD
+    valueFrom:
+      secretKeyRef:
+          name: adguard-configuration
+          key: password
+  - name: SERVER_HOST
+    value: "0.0.0.0" 
+  - name: DRY_RUN
+    value: "false"  
 EOF
 ```
 

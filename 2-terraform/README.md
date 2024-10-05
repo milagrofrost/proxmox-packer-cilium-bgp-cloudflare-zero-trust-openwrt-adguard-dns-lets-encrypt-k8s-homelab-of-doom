@@ -18,7 +18,6 @@ This directory contains Terraform configuration files for setting up Proxmox VMs
 
 - [Terraform](https://www.terraform.io/) installed on your local machine.
 - Proxmox server with API access.
-- SSH access to the Proxmox server.
 
 ## Variables
 
@@ -41,19 +40,20 @@ Z
 
 1. Ensure that the Proxmox server is accessible and the API is enabled.
 2. Customize the variables in `terraform.tfvars` as needed.
-3. Initialize Terraform:
+  - Navigate to the files folder in this directory here
+1. Initialize Terraform:
 
     ```sh
     terraform init
     ```
 
-4. Plan the Terraform deployment:
+2. Plan the Terraform deployment:
 
     ```sh
     terraform plan
     ```
 
-5. Apply the Terraform configuration:
+3. Apply the Terraform configuration:
 
     ```sh
     terraform apply

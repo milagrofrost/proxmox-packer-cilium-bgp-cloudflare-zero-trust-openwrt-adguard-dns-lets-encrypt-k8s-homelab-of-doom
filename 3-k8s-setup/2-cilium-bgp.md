@@ -14,25 +14,28 @@ Dont take my word for it, read up on it!!  https://docs.cilium.io/en/stable/netw
 
 ```yaml
 # kubectl get ciliumbgpadvertisements.cilium.io -o yaml
+# some values will need to be changed to match your environment
+
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPAdvertisement
 metadata:
-labels:
+  labels:
     advertise: bgp
-name: bgp-advertisements
+  name: bgp-advertisements
 spec:
-advertisements:
-- advertisementType: Service
+  advertisements:
+  - advertisementType: Service
     selector:
-    matchExpressions:
-    - key: somekey
+      matchExpressions:
+      - key: somekey  # this is not a placeholder, this is legit
         operator: NotIn
         values:
         - never-used-value
     service:
-    addresses:
-    - ExternalIP
-    - LoadBalancerIP
+      addresses:
+      - ExternalIP
+      - LoadBalancerIP
+
 ```
 
 BGP cluster configs are where you 1-to-1 map the Cilium BGP peer to the router BGP peer.  This is where you define the ASN, peer address, and peer ASN.  The `nodeSelector` is used to select which nodes will participate in the BGP peering.  In this case, only Linux nodes will participate.  This policy applies to all nodes in the cluster.
@@ -44,16 +47,16 @@ metadata:
   name: cilium-bgp
 spec:
   bgpInstances:
-  - localASN: 65001
+  - localASN: 65011
     name: cluster
     peers:
-    - name: opnsense
-      peerASN: 65000
+    - name: peer
+      peerASN: 65010
       peerAddress: 10.10.101.1
       peerConfigRef:
         group: cilium.io
         kind: CiliumBGPPeerConfig
-        name: cilium-peer
+        name: cilium-peer  # linked to the CiliumBGPPeerConfig object below
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
@@ -71,7 +74,7 @@ spec:
   families:
   - advertisements:
       matchLabels:
-        advertise: bgp
+        advertise: bgp # linked to the CiliumBGPAdvertisement object above
     afi: ipv4
     safi: unicast
   gracefulRestart:

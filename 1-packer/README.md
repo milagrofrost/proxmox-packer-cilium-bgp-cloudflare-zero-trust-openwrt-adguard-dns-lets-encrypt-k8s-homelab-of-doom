@@ -35,7 +35,7 @@ The following variables are defined in `custom-vars.auto.pkrvars.hcl`:
 3. Run the Packer build command:
 
     ```sh
-    packer build build.pkr.hcl
+    packer build .
     ```
 
 ## Ignored Files

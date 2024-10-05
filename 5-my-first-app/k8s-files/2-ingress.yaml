@@ -39,7 +39,7 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: gateway-home
+  - name: gateway
     namespace: default
   rules:
   - matches:
