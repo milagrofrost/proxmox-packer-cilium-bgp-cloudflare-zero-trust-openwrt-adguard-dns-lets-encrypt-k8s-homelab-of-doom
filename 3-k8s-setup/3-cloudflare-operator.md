@@ -28,25 +28,12 @@ kubectl apply -k https://github.com/adyanth/cloudflare-operator/config/default
 
 ## Deploy the ClusterTunnel
 
-Follow the guide above to get your own config file, but her is mine for reference.
+Follow the guide above to get your own config file, but here is mine for reference.
 
 
-- For both token and Global key, you must encode them when creating the secret.  Here is an example of the secret creation.
+- Create the secret for the Cloudflare API Key and Token
 ```sh
-echo -n "xxxCLOUDFLARE_API_KEYxxx" | base64
-```
-
-```yaml
-# cloudflare-secrets.yaml
-apiVersion: v1
-data:
-  CLOUDFLARE_API_KEY: BASE64_ENCODED_CLOUDFLARE_API_KEY # change this
-  CLOUDFLARE_API_TOKEN: BASE64_ENCODED_CLOUDFLARE_API_TOKEN # change this
-kind: Secret
-metadata:
-  name: cloudflare-secrets
-  namespace: cloudflare-operator-system
-type: Opaque
+kubectl -n cloudflare-operator-system create secret generic cloudflare-secrets --from-literal CLOUDFLARE_API_TOKEN=<api-token> --from-literal CLOUDFLARE_API_KEY=<api-key>
 ```
 
 ```yaml
@@ -81,7 +68,6 @@ spec:
 
 - Apply the secrets and the clustertunnel
 ```sh
-kubectl apply -f cloudflare-secrets.yaml
 kubectl apply -f clustertunnel.yaml
 ```
 
