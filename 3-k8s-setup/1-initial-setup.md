@@ -36,12 +36,33 @@
 ### On All Worker Nodes
 
 X. **Join the Cluster:**
-    - Run the `kubeadm join` command that was outputted from the master. Must run as `sudo` or `root`
-    - Example:
-    ```sh
-    sudo kubeadm join 10.10.101.251:6443 --token xxxxx.xxxxxxxx --discovery-token-ca-cert-hash sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   - Run the `kubeadm join` command that was outputted from the master. Must run as `sudo` or `root`
+   - Example:
+   ```sh
+   sudo kubeadm join 10.10.101.251:6443 --token xxxxx.xxxxxxxx --discovery-token-ca-cert-hash sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+Y. **Disabling AppArmor**
+  - I had issues with Pods not terminating properly due to AppArmor.
+  - You can "force" the pods to terminate but if you check the containers on the workers, they will still be running.
+  - Consider using AppArmor as K8s recommends https://kubernetes.io/docs/tutorials/security/apparmor/
+  - OOOOORRRRRRRR since this is just a widdle homelab, you can disable it.
+  - https://www.reddit.com/r/kubernetes/comments/1dv6z9d/ubuntu_2404_pod_termination_issue/
+  - 
+    You can either disable apparmor for containerd or just disable the default apparmor profile for runc that ships with ubuntu 24.04.
+
+    First solution, disable apparmor for containerd (which includes rules for runc) by editing /etc/containerd/config.toml:
+    ```
+    [plugins."io.containerd.grpc.v1.cri"]
+    disable_apparmor = true
     ```
 
+    Second solution (should be the prefered solution), disable ubuntu's default apparmor runc profile:
+
+    ```
+    sudo ln -s /etc/apparmor.d/runc /etc/apparmor.d/disable/
+    sudo apparmor_parser -R /etc/apparmor.d/runc
+    ```
 
 ### Back to Master
 
