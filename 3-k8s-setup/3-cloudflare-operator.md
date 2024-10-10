@@ -90,3 +90,4 @@ kubectl get clustertunnel k8s-cluster-tunnel -n cloudflare-operator-system
 - Incorrect domain or account ID
 - You end up changing `k8s-cluster-tunnel` to something else.
   - make sure for every instance of `k8s-cluster-tunnel` you change it to the same name of your choosing.
+- If you k8s nodes are failing to terminate the tunnel pods after each configuration update, you will have stale tunnels with old configurations running.  This will cause the new configuration to not work.  For me, I forgot to disable Ubuntu AppArmor on the nodes.  This was causing the pods to not terminate properly.  I disabled AppArmor and the pods terminated properly.  I then updated the configuration and the new tunnel was created with the new configuration.
