@@ -6,6 +6,10 @@ This will create internal DNS names (via DNS rewrites) for your k8s services.  T
 
 - A Kubernetes cluster OBVIOUSLY
 - AdGuardHome installed and running somewhere on your network.  In this case, it's running on OpenWRT on a Raspberry Pi 4.
+
+## Caveats
+
+- Don't run more than one instance of Adguard external-dns provider.  In my experience, it will spam the DNS Rewrite filter.
   
 ## Setup Instructions
 
