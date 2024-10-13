@@ -1,0 +1,215 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: dir
+  name: dir
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: dir
+  name: cloudflare-api-token-secret
+  namespace: dir
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dir
+    service-type: internal
+  name: service
+  namespace: dir
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: dir
+    port: 5800
+    targetPort: 5800
+  selector:
+    app: dir
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/dir
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: dir
+  name: nfs
+  namespace: dir
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-dir
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir-ro
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: dir
+  name: nfs-dir-ro
+  namespace: dir
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-dir-ro
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dir
+  name: deploy
+  namespace: dir
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dir
+  template:
+    metadata:
+      labels:
+        app: dir
+    spec:
+      containers:
+      - image: jlesage/qdirstat
+        name: container
+        ports:
+        - containerPort: 5800
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+        - mountPath: /storage
+          name: ro
+          readOnly: true
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+      - name: ro
+        persistentVolumeClaim:
+          claimName: nfs-dir-ro
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: dir
+  name: gateway
+  namespace: dir
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: dir.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: dir.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-dir
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: dir
+  name: route
+  namespace: dir
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: dir
+  rules:
+  - backendRefs:
+    - name: service
+      port: 5800
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: dir
+  name: tunnel
+  namespace: dir
+subjects:
+- name: gateway
+  spec:
+    fqdn: dir.frostbit.in
+    target: http://cilium-gateway-gateway.dir.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

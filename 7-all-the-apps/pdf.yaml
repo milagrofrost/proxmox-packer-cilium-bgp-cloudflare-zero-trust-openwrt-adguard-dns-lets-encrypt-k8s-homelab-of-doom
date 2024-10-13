@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: pdf
+  name: pdf
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: pdf
+  name: cloudflare-api-token-secret
+  namespace: pdf
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pdf
+    service-type: internal
+  name: service
+  namespace: pdf
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: pdf
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: pdf
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: pdf
+  name: nfs-pdf
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/pdf
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: pdf
+  name: nfs
+  namespace: pdf
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-pdf
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pdf
+  name: deploy
+  namespace: pdf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pdf
+  template:
+    metadata:
+      labels:
+        app: pdf
+    spec:
+      containers:
+      - image: frooodle/s-pdf:latest
+        name: container
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /configs
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: pdf
+  name: gateway
+  namespace: pdf
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: pdf.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: pdf.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-pdf
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: pdf
+  name: route
+  namespace: pdf
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: pdf
+  rules:
+  - backendRefs:
+    - name: service
+      port: 8080
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: pdf
+  name: tunnel
+  namespace: pdf
+subjects:
+- name: gateway
+  spec:
+    fqdn: pdf.frostbit.in
+    target: http://cilium-gateway-gateway.pdf.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

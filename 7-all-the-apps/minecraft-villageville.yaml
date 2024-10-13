@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: minecraft-villageville
+  name: minecraft-villageville
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: minecraft-villageville
+  name: cloudflare-api-token-secret
+  namespace: minecraft-villageville
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: minecraft-villageville
+    service-type: internal
+  name: service
+  namespace: minecraft-villageville
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: minecraft-villageville
+    port: 25565
+    targetPort: 25565
+  selector:
+    app: minecraft-villageville
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: minecraft-villageville
+  name: nfs-minecraft-villageville
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/minecraft-villageville
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: minecraft-villageville
+  name: nfs
+  namespace: minecraft-villageville
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-minecraft-villageville
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: minecraft-villageville
+  name: deploy
+  namespace: minecraft-villageville
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: librenms
+  template:
+    metadata:
+      labels:
+        app: librenms
+    spec:
+      volumes:
+        - name: persist
+          persistentVolumeClaim:
+            claimName: nfs
+      containers:
+        - name: container
+          image: itzg/minecraft-server
+          env:
+          - name: EULA
+            value: "TRUE"
+          - name: LEVEL_TYPE
+            value: flat
+          - name: ENABLE_AUTOPAUSE
+            value: "TRUE"
+          - name: MODE
+            value: creative
+          - name: OPS
+            value: gitbusylivin
+          # - name: VERSION
+          #   value: "1.19.3"
+          ports:
+            - containerPort: 25565
+          volumeMounts:
+            - mountPath: /data
+              name: persist

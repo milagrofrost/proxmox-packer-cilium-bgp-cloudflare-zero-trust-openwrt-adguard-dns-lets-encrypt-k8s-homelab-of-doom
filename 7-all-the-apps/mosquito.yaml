@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: mosquito
+  name: mosquito
+---
+
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  labels:
+    service-type: mqtt
+  name: pool-mqtt
+spec:
+  blocks:
+  - cidr: 10.10.200.232/32
+---
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: mosquito
+  name: cloudflare-api-token-secret
+  namespace: mosquito
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mosquito
+    service-type: mqtt
+  name: service
+  namespace: mosquito
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  loadBalancerIP: 10.10.200.232
+  ports:
+  - port: 1883
+    targetPort: 1883
+    name: mosquito
+  - port: 9001
+    targetPort: 9001
+    name: mosquito-1
+  selector:
+    app: mosquito
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: mosquito
+  name: nfs-mosquito
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/mosquito
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: mosquito
+  name: nfs
+  namespace: mosquito
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-mosquito
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mosquito
+  name: deploy
+  namespace: mosquito
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mosquito
+  template:
+    metadata:
+      labels:
+        app: mosquito
+    spec:
+      containers:
+      - image: eclipse-mosquitto:1.6.14
+        name: container
+        ports:
+          - containerPort: 1883
+          - containerPort: 9001
+        volumeMounts:
+        - mountPath: /mosquito
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs

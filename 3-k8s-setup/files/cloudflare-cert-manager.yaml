@@ -1,5 +1,5 @@
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer # I changed this from Issuer to ClusterIssuer so it could issues certs across all namespaces
 metadata:
   name: cloudflare-issuer
   namespace: default
@@ -15,3 +15,4 @@ spec:
           apiTokenSecretRef:
             name: cloudflare-api-token-secret
             key: api-token
+            namespace: default

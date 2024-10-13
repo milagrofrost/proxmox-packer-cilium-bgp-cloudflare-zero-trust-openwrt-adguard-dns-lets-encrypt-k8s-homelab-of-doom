@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: homeass
+  name: homeass
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: homeass
+  name: cloudflare-api-token-secret
+  namespace: homeass
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: homeass
+    service-type: internal
+  name: service
+  namespace: homeass
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: homeass
+    port: 8123
+    targetPort: 8123
+  selector:
+    app: homeass
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: homeass
+  name: nfs-homeass
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/homeass
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: homeass
+  name: nfs
+  namespace: homeass
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-homeass
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: homeass
+  name: deploy
+  namespace: homeass
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homeass
+  template:
+    metadata:
+      labels:
+        app: homeass
+    spec:
+      containers:
+      - image: homeassistant/home-assistant:stable
+        name: container
+        ports:
+        - containerPort: 8123
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+

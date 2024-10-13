@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: unifi
+  name: unifi
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: unifi
+  name: cloudflare-api-token-secret
+  namespace: unifi
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: unifi
+    service-type: internal
+  name: service
+  namespace: unifi
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - port: 8443
+    targetPort: 8443
+    name: unifi
+  - port: 10001
+    targetPort: 10001
+    name: unifi-2
+  - port: 8080
+    targetPort: 8080
+    name: unifi-3
+  - port: 8081
+    targetPort: 8081
+    name: unifi-4
+  - port: 8843
+    targetPort: 8843
+    name: unifi-6
+  - port: 8800
+    targetPort: 8800
+    name: unifi-7
+  - port: 6789
+    targetPort: 6789
+    name: unifi-8
+  selector:
+    app: unifi
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: unifi
+  name: nfs-unifi
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/unifi
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: unifi
+  name: nfs
+  namespace: unifi
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-unifi
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: unifi
+  name: deploy
+  namespace: unifi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unifi
+  template:
+    metadata:
+      labels:
+        app: unifi
+    spec:
+      containers:
+      - image: linuxserver/unifi-controller:latest
+        name: container
+        ports:
+          - containerPort: 10001
+            protocol: UDP
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8081
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          - containerPort: 8843
+            protocol: TCP
+          - containerPort: 8800
+            protocol: TCP
+          - containerPort: 6789
+            protocol: TCP
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs

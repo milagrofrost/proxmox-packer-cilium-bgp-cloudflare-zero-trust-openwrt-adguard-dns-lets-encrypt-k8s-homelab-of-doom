@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: code
+  name: code
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: code
+  name: cloudflare-api-token-secret
+  namespace: code
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: code
+    service-type: internal
+  name: service
+  namespace: code
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: code
+    port: 8443
+    targetPort: 8443
+  selector:
+    app: code
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: code
+  name: nfs-code
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/code
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: code
+  name: nfs
+  namespace: code
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-code
+---
+
+### I disabled https on this deployment, but it's still listening on 8443.  http over 8443
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: code
+  name: deploy
+  namespace: code
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code
+  template:
+    metadata:
+      labels:
+        app: code
+    spec:
+      containers:
+      - image: linuxserver/code-server
+        name: container
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: code
+  name: gateway
+  namespace: code
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: code.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: code.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-code
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: code
+  name: route
+  namespace: code
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: code
+  rules:
+  - backendRefs:
+    - name: service
+      port: 8443
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: code
+  name: tunnel
+  namespace: code
+subjects:
+- name: gateway
+  spec:
+    fqdn: code.frostbit.in
+    target: http://cilium-gateway-gateway.code.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

@@ -1,0 +1,7 @@
+# Welcome!!!!
+
+- In this folder are all the apps that I have setup in my k8s cluster.  I have setup each app in a separate namespace.  I have also setup the cert-manager to issue certs across all namespaces (see section 3-k8s-setup for cert-manager details).
+- All but the plex yaml are exactly as I've deployed them.  My actual plex.yaml has a secret for the plex claim token.  I've removed that for security reasons.  You can get your own claim token from the plex website.
+- I use an NFS server to store all my persistent volumes "10.10.101.210".  For directions on how to setup an NFS server, see the NFS section in the `6-extracurriculars` folder.
+- I've also included the helm chart that I used to create frontends for pods that automatically are listening on an SSL/HTTPS port.  Since Geteway-API does not do SSL Termination with SSL backends, you gotta have a workaround.  This helm chart will create the necessary resources to make that happen.
+- There's a template folder with the `template.yaml` to help deploy any new apps that you want to deploy.  Just copy the template and fill in the values that are #hashed out.  These are for simple deployments where one port and one persistent volume is needed.

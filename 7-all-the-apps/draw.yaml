@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: draw
+  name: draw
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: draw
+  name: cloudflare-api-token-secret
+  namespace: draw
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: draw
+    service-type: internal
+  name: service
+  namespace: draw
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: draw
+    port: 80
+    targetPort: 80
+  selector:
+    app: draw
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: draw
+  name: nfs-draw
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/draw
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: draw
+  name: nfs
+  namespace: draw
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-draw
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: draw
+  name: deploy
+  namespace: draw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: draw
+  template:
+    metadata:
+      labels:
+        app: draw
+    spec:
+      containers:
+      - image: excalidraw/excalidraw
+        name: container
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /etc/draw
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: draw
+  name: gateway
+  namespace: draw
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: draw.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: draw.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-draw
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: draw
+  name: route
+  namespace: draw
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: draw
+  rules:
+  - backendRefs:
+    - name: service
+      port: 80
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: draw
+  name: tunnel
+  namespace: draw
+subjects:
+- name: gateway
+  spec:
+    fqdn: draw.frostbit.in
+    target: http://cilium-gateway-gateway.draw.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

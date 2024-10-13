@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: changedetect
+  name: changedetect
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: changedetect
+  name: cloudflare-api-token-secret
+  namespace: changedetect
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: changedetect
+    service-type: internal
+  name: service
+  namespace: changedetect
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: changedetect
+    port: 5000
+    targetPort: 5000
+  selector:
+    app: changedetect
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: changedetect
+  name: nfs-changedetect
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/changedetect
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: changedetect
+  name: nfs
+  namespace: changedetect
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-changedetect
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: changedetect
+  name: deploy
+  namespace: changedetect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: changedetect
+  template:
+    metadata:
+      labels:
+        app: changedetect
+    spec:
+      containers:
+      - image: dgtlmoon/changedetection.io
+        name: container
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - mountPath: /datastore
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: changedetect
+  name: gateway
+  namespace: changedetect
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: changedetect.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: changedetect.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-changedetect
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: changedetect
+  name: route
+  namespace: changedetect
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: changedetect
+  rules:
+  - backendRefs:
+    - name: service
+      port: 5000
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: changedetect
+  name: tunnel
+  namespace: changedetect
+subjects:
+- name: gateway
+  spec:
+    fqdn: changedetect.frostbit.in
+    target: http://cilium-gateway-gateway.changedetect.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

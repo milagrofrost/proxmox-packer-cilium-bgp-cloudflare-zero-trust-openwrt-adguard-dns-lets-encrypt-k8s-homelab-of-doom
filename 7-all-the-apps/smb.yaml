@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: smb
+  name: smb
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: smb
+  name: cloudflare-api-token-secret
+  namespace: smb
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: smb
+    service-type: internal
+  name: service
+  namespace: smb
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - port: 139
+    targetPort: 139
+    name: smb
+  - port: 445
+    targetPort: 445
+    name: smb-1
+  selector:
+    app: smb
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: smb
+  name: nfs-smb
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: smb
+  name: nfs
+  namespace: smb
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-smb
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: smb
+  name: deploy
+  namespace: smb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smb
+  template:
+    metadata:
+      labels:
+        app: smb
+    spec:
+      containers:
+      - image: dperson/samba
+        name: container
+        args: ["-u", "frost;frost", "-s", "share;/share/;yes;no;no;all;none", "-s", "pxe;/share/apps/pxe/images", "-p"]
+        ports:
+          - containerPort: 139
+          - containerPort: 445
+        volumeMounts:
+        - mountPath: /share
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---

@@ -1,0 +1,172 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: plex
+  name: plex
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: plex
+  name: cloudflare-api-token-secret
+  namespace: plex
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: plex
+    service-type: internal
+  name: service
+  namespace: plex
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - port: 32400
+    targetPort: 32400
+    name: plex
+  - port: 32469
+    targetPort: 32469 
+    name: plex-1
+  - port: 8324
+    targetPort: 8324
+    name: plex-2
+  selector:
+    app: plex
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: plex
+  name: nfs-plex
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/plex
+    server: 10.10.101.210
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-plex-media
+spec:
+  capacity:
+    storage: 2000Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.10.101.210
+    path: "/nfsshare/media"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: plex
+  name: nfs
+  namespace: plex
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-plex
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-plex-media
+  labels:
+    app: plex
+  namespace: plex
+spec:
+  volumeName: nfs-plex-media
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: plex
+  name: deploy
+  namespace: plex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plex
+  template:
+    metadata:
+      labels:
+        app: plex
+    spec:
+      containers:
+      - image: linuxserver/plex
+        name: container
+        env:
+        - name: HOSTNAME
+          value: "Frosty Plex"
+        - name: PLEX_CLAIM
+          value: "xxxxxxxxxxxxxxxxxxxx" #secret
+        - name: ADVERTISE_IP
+          value: "https://plex.frostbit.in"
+        ports:
+        - containerPort: 1900
+          protocol: UDP
+        - containerPort: 32400
+          protocol: TCP
+        - containerPort: 32410
+          protocol: UDP
+        - containerPort: 32412
+          protocol: UDP
+        - containerPort: 32413
+          protocol: UDP
+        - containerPort: 32414
+          protocol: UDP
+        - containerPort: 32469
+          protocol: TCP
+        - containerPort: 8324
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+        - mountPath: "/media"
+          name: media
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+      - name: media
+        persistentVolumeClaim:
+          claimName: nfs-plex-media

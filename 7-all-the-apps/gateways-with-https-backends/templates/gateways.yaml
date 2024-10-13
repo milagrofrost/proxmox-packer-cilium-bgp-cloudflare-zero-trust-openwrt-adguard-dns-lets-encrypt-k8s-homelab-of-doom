@@ -1,0 +1,167 @@
+# gateways:
+#   router:
+#     endpoint: 10.10.101.1
+#     port: 80
+#   octopi:
+#     endpoint: 10.10.101.200
+#     port: 80
+#   esxi:
+#     endpoint: 10.10.101.11
+#     port: 443
+
+{{- range $key, $value := .Values.gateways }}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-{{$value.name}}
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-{{$value.name}}
+  template:
+    metadata:
+      labels:
+        app: external-{{$value.name}}
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: {{ $value.port }}
+        volumeMounts:
+        - name: external-{{$value.name}}-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: external-{{$value.name}}-config
+        configMap:
+          name: external-{{$value.name}}-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-{{$value.name}}-config
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+data:
+  default.conf: |
+    server {
+        listen {{ $value.port }};
+        location / {
+            proxy_pass {{ $value.backend_protocol }}://{{ $value.endpoint }}:{{ $value.port }};
+            proxy_set_header Host $host;
+            proxy_ssl_verify       off;
+            proxy_ssl_server_name on;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-{{$value.name}}
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  selector:
+    app: external-{{$value.name}}
+  ports:
+    - protocol: TCP
+      port: {{ $value.port }}
+      targetPort: {{ $value.port }}
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway-{{ $value.name }}
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: {{$value.name}}.{{ $.Values.domain }}
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http-{{ $value.name }}
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - protocol: HTTPS
+    hostname: {{$value.name}}.{{ $.Values.domain }}
+    port: 443
+    name: https-{{ $value.name }}
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-{{$value.name}}
+    allowedRoutes:
+      namespaces:
+        from: Same
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-{{$value.name}}
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+spec:
+  parentRefs:
+  - name: gateway-{{$value.name}}
+    namespace: {{ $value.namespace }}
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: external-{{$value.name}}
+      port: {{ $value.port }}
+
+
+
+---
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  name: tunnel-{{$value.name}}
+  namespace: {{ $value.namespace }}
+  labels:
+    app: external-{{$value.name}}
+subjects:
+  - name: cilium-gateway-gateway-{{ $value.name }}
+    spec:
+      fqdn: {{ $value.name }}.{{ $.Values.domain }}
+tunnelRef:
+  kind: ClusterTunnel
+  name: {{ $.Values.tunnel_name }}
+
+{{- end }}
+
+
+
+

@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: open-webui
+  name: open-webui
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: open-webui
+  name: cloudflare-api-token-secret
+  namespace: open-webui
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: open-webui
+    service-type: internal
+  name: service
+  namespace: open-webui
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: open-webui
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: open-webui
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: open-webui
+  name: nfs-open-webui
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/open-webui
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: open-webui
+  name: nfs
+  namespace: open-webui
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-open-webui
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: open-webui
+  name: deploy
+  namespace: open-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+      - image: ghcr.io/open-webui/open-webui:main
+        name: container
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /app/backend/data
+          name: persist
+          readOnly: false
+        env:
+          - name: OLLAMA_BASE_URL
+            value: "http://service.ollama.svc.cluster.local:11434"
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: open-webui
+  name: gateway
+  namespace: open-webui
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: open-webui.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: open-webui.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-open-webui
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: open-webui
+  name: route
+  namespace: open-webui
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: open-webui
+  rules:
+  - backendRefs:
+    - name: service
+      port: 8080
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: open-webui
+  name: tunnel
+  namespace: open-webui
+subjects:
+- name: gateway
+  spec:
+    fqdn: open-webui.frostbit.in
+    target: http://cilium-gateway-gateway.open-webui.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

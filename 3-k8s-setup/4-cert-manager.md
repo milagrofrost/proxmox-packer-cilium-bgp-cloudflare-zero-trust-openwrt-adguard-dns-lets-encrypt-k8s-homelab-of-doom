@@ -43,7 +43,7 @@ This will create a cert-manager issuer that uses cloudflare for domain validatio
 - create issuer resource
 ```yaml
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer # I changed this from Issuer to ClusterIssuer so it could issues certs across all namespaces
 metadata:
   name: cloudflare-issuer
 spec:
@@ -61,3 +61,51 @@ spec:
 ```
 
 - No need to create use the cloudflare key if you are using a token.  The token is more secure and has less permissions than the key.
+
+## UPDATES
+
+I wanted to add a few things that I learned after setting up the cert-manager.
+
+- I wanted to deploy each app in a separate namespace.  I had to change the issuer to a ClusterIssuer so that it could issue certs across all namespaces.
+- In order for that to work, I needed the `cloudflare-api-token-secret` to be in every namespace that I wanted to issue certs in. I did not want to have to create the key over and over again so I installed `relector` to copy the secret value to every namespace.
+- https://github.com/emberstack/kubernetes-reflector
+- To use Reflector you install it the dependencies
+```sh
+helm repo add emberstack https://emberstack.github.io/helm-charts
+helm repo update
+helm upgrade --install reflector emberstack/reflector
+```
+
+- In the namespace where you original `cloudflare-api-token-secret` is located (In my case, it was in the default namespace) update the secret to have the `reflector` annotations
+```yaml
+apiVersion: v1
+data:
+  api-token: Z......no...peeeking....==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: ""
+  name: cloudflare-api-token-secret
+  namespace: default
+type: Opaque
+```
+- Then in each namespace where you want the secret to be copied to, you add a new secret with a bogus secret value.  I'm not sure if the secret needs the same secret key as the original secret, but I did it anyway.
+- This will have slightly different annotations than the original secret
+```yaml
+❯   kubectl get secret cloudflare-api-token-secret -o yaml -n unifi
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: unifi
+  name: cloudflare-api-token-secret
+  namespace: unifi
+type: Opaque
+```
+- As you can see my secret value decodes to `hello`. It's not the same as the original secret value for `cloudflare-api-token-secret` but it doesn't matter.  The reflector will copy the value from the original secret to the new secret in the namespace.
+- Trust me, it works bro.

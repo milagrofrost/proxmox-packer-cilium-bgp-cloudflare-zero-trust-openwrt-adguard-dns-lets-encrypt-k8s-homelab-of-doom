@@ -1,0 +1,233 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:26Z"
+    generation: 1
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+    name: external-unifi
+    namespace: unifi
+    resourceVersion: "1144057"
+    uid: e0555a66-dcce-4008-b8d6-3c854f6910ed
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: external-unifi
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: external-unifi
+      spec:
+        containers:
+        - image: nginx:latest
+          imagePullPolicy: Always
+          name: nginx
+          ports:
+          - containerPort: 8443
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/nginx/conf.d
+            name: external-unifi-config
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: external-unifi-config
+          name: external-unifi-config
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: Gateway
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: cloudflare-issuer
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:26Z"
+    generation: 1
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+    name: gateway-unifi
+    namespace: unifi
+    resourceVersion: "1144081"
+    uid: a22a14d4-6266-4178-b4ce-95d24d140bee
+  spec:
+    gatewayClassName: cilium
+    infrastructure:
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: unifi.frostbit.in
+    listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      name: http-unifi
+      port: 80
+      protocol: HTTP
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: unifi.frostbit.in
+      name: https-unifi
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+        - group: ""
+          kind: Secret
+          name: secret-tls-unifi
+        mode: Terminate
+
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:26Z"
+    generation: 1
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+    name: route-unifi
+    namespace: unifi
+    resourceVersion: "1144090"
+    uid: b2bc591c-bde4-4153-864b-d42f67f28771
+  spec:
+    parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-unifi
+      namespace: unifi
+    rules:
+    - backendRefs:
+      - group: ""
+        kind: Service
+        name: external-unifi
+        port: 8443
+        weight: 1
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:25Z"
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+    name: external-unifi
+    namespace: unifi
+    resourceVersion: "1144048"
+    uid: 7398a5ef-12db-48cc-9b94-66ce15b28f5a
+  spec:
+    allocateLoadBalancerNodePorts: true
+    clusterIP: 10.104.183.208
+    clusterIPs:
+    - 10.104.183.208
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - nodePort: 31650
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      app: external-unifi
+    sessionAffinity: None
+    type: LoadBalancer
+- apiVersion: v1
+  data:
+    default.conf: |
+      server {
+          listen 8443;
+          location / {
+              proxy_pass https://service.unifi.svc.cluster.local:8443;
+              proxy_set_header Host $host;
+              proxy_ssl_verify       off;
+              proxy_ssl_server_name on;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+  kind: ConfigMap
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:25Z"
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+    name: external-unifi-config
+    namespace: unifi
+    resourceVersion: "1144029"
+    uid: 89ed0ebc-bd4c-4db5-83bb-489dcb16d171
+- apiVersion: networking.cfargotunnel.com/v1alpha1
+  kind: TunnelBinding
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: gateways
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2024-10-13T00:53:26Z"
+    finalizers:
+    - cfargotunnel.com/finalizer
+    generation: 2
+    labels:
+      app: external-unifi
+      app.kubernetes.io/managed-by: Helm
+      cfargotunnel.com/kind: TunnelBinding
+      cfargotunnel.com/name: k8s-cluster-tunnel
+    name: tunnel-unifi
+    namespace: unifi
+    resourceVersion: "1144111"
+    uid: 03264395-4ffa-4d27-8c9d-e263a98dffdb
+  status:
+    hostnames: unifi.frostbit.in
+    services:
+    - hostname: unifi.frostbit.in
+      target: http://cilium-gateway-gateway-unifi.unifi.svc:80
+  subjects:
+  - kind: Service
+    name: cilium-gateway-gateway-unifi
+    spec:
+      fqdn: unifi.frostbit.in
+      noTlsVerify: false
+      proxyAddress: 127.0.0.1
+      proxyPort: 0
+      proxyType: ""
+  tunnelRef:
+    disableDNSUpdates: false
+    kind: ClusterTunnel
+    name: k8s-cluster-tunnel
+

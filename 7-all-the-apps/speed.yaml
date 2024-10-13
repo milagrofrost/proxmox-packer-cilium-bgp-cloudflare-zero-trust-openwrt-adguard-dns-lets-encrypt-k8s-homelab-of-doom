@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: speed
+  name: speed
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: speed
+  name: cloudflare-api-token-secret
+  namespace: speed
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: speed
+    service-type: internal
+  name: service
+  namespace: speed
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: speed
+    port: 80
+    targetPort: 80
+  selector:
+    app: speed
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: speed
+  name: nfs-speed
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/speed
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: speed
+  name: nfs
+  namespace: speed
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-speed
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: speed
+  name: deploy
+  namespace: speed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: speed
+  template:
+    metadata:
+      labels:
+        app: speed
+    spec:
+      containers:
+      - image: linuxserver/speedtest-tracker
+        name: container
+        env:
+        - name: APP_KEY
+          value: "base64:f9DqQ5mAk3JPPHFVMQQtZP21EAdlJb78r4aXBAoTTtQ="
+        - name: SPEEDTEST_SCHEDULE
+          value: 0 * * * *
+        - name: DISPLAY_TIMEZONE
+          value: America/New_York
+        - name: PRUNE_RESULTS_OLDER_THAN
+          value: "365"
+        - name: PUBLIC_DASHBOARD
+          value: "TRUE"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /config
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: speed
+  name: gateway
+  namespace: speed
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: speed.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: speed.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-speed
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: speed
+  name: route
+  namespace: speed
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: speed
+  rules:
+  - backendRefs:
+    - name: service
+      port: 80
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: speed
+  name: tunnel
+  namespace: speed
+subjects:
+- name: gateway
+  spec:
+    fqdn: speed.frostbit.in
+    target: http://cilium-gateway-gateway.speed.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: lan
+  name: lan
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: lan
+  name: cloudflare-api-token-secret
+  namespace: lan
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: lan
+    service-type: internal
+  name: service
+  namespace: lan
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: lan
+    port: 8840
+    targetPort: 8840
+  selector:
+    app: lan
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: lan
+  name: nfs-lan
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/lan
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: lan
+  name: nfs
+  namespace: lan
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-lan
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: lan
+  name: deploy
+  namespace: lan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lan
+  template:
+    metadata:
+      labels:
+        app: lan
+    spec:
+      containers:
+      - image: aceberg/watchyourlan:v2
+        name: container
+        ports:
+        - containerPort: 8840
+        volumeMounts:
+        - mountPath: /data/WatchYourLAN
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: lan
+  name: gateway
+  namespace: lan
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: lan.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: lan.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-lan
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: lan
+  name: route
+  namespace: lan
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: lan
+  rules:
+  - backendRefs:
+    - name: service
+      port: 8840
+    matches: null
+---
+
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: lan
+  name: tunnel
+  namespace: lan
+subjects:
+- name: gateway
+  spec:
+    fqdn: lan.frostbit.in
+    target: http://cilium-gateway-gateway.lan.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

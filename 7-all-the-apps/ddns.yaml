@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: ddns
+  name: ddns
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: ddns
+  name: cloudflare-api-token-secret
+  namespace: ddns
+---
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ddns
+  name: deploy
+  namespace: ddns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ddns
+  template:
+    metadata:
+      labels:
+        app: ddns
+    spec:
+      containers:
+      - env:
+        - name: CF_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: api-token
+              name: cloudflare-api-token-secret
+        - name: DOMAINS
+          value: ddns.frostbit.in
+        - name: PROXIED
+          value: "false"
+        - name: TZ
+          value: America/New_York
+        - name: IP6_PROVIDER
+          value: none
+        image: favonia/cloudflare-ddns:latest
+        name: container

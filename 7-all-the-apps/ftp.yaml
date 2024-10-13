@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: ftp
+  name: ftp
+---
+
+
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: ftp
+  name: cloudflare-api-token-secret
+  namespace: ftp
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ftp
+    service-type: internal
+  name: service
+  namespace: ftp
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - port: 21
+    targetPort: 21
+    name: ftp
+  - port: 30000
+    targetPort: 30000
+    name: ftp-0
+  - port: 30001
+    targetPort: 30001
+    name: ftp-1
+  - port: 30002
+    targetPort: 30002
+    name: ftp-2
+  - port: 30003
+    targetPort: 30003
+    name: ftp-3
+  - port: 30004
+    targetPort: 30004
+    name: ftp-4
+  - port: 30005
+    targetPort: 30005
+    name: ftp-5
+  - port: 30006
+    targetPort: 30006
+    name: ftp-6
+  - port: 30007
+    targetPort: 30007
+    name: ftp-7
+  - port: 30008
+    targetPort: 30008
+    name: ftp-8
+  - port: 30009
+    targetPort: 30009
+    name: ftp-9
+  selector:
+    app: ftp
+  type: LoadBalancer
+---
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: ftp
+  name: nfs-ftp
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/ftp
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ftp
+  name: nfs
+  namespace: ftp
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-ftp
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: ftp
+  name: nfs-ftp-data
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/ftp/data
+    server: 10.10.101.210
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ftp
+  name: nfs-ftp-data
+  namespace: ftp
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-ftp-data
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ftp
+  name: deploy
+  namespace: ftp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ftp
+  template:
+    metadata:
+      labels:
+        app: ftp
+    spec:
+      containers:
+      - image: gists/pure-ftpd
+        name: container
+        ports:
+          - containerPort: 21
+          - containerPort: 30000
+          - containerPort: 30001
+          - containerPort: 30002
+          - containerPort: 30003
+          - containerPort: 30004
+          - containerPort: 30005
+          - containerPort: 30006
+          - containerPort: 30007
+          - containerPort: 30008
+          - containerPort: 30009
+        volumeMounts:
+          - mountPath: "/etc/pureftpd"
+            name: persist
+          - mountPath: "/home/ftpuser"
+            name: data
+      volumes:
+        - name: persist
+          persistentVolumeClaim:
+            claimName: nfs
+        - name: data
+          persistentVolumeClaim:
+            claimName: nfs-ftp-data
