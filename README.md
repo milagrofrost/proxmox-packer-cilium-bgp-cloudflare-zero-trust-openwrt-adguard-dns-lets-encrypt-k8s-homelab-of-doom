@@ -73,10 +73,10 @@ The bare minimum requirements to run the core services ⚙️ and not any other 
 - [🤹‍♂️ Extracurriculars](./6-extracurriculars)  
   For funsies, 😄 some extra stuff to do with the cluster. 🎉
 
-- [🌐 All The Apps](7-all-the-apps/README.md)
+- [🌐 All The Apps](7-all-the-apps/README.md)  
   All the apps that I have setup in my k8s cluster. 📦
 
-  
+
 ## 👤 Who am I?
 
 I'm a Cloud Engineer ☁️ by day and a Kubernetes admin 🕹️ by night. 🌙
