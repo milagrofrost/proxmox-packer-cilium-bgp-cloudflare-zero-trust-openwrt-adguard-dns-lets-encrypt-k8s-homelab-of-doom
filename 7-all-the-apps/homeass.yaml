@@ -93,6 +93,7 @@ spec:
       labels:
         app: homeass
     spec:
+      hostNetwork: true
       containers:
       - image: homeassistant/home-assistant:stable
         name: container

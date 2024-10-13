@@ -93,6 +93,7 @@ spec:
       labels:
         app: lan
     spec:
+      hostNetwork: true
       containers:
       - image: aceberg/watchyourlan:v2
         name: container
