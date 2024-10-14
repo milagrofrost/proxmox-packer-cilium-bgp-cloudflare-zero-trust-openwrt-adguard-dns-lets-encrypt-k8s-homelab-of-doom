@@ -1,0 +1,156 @@
+apiVersion: v1
+data:
+  api-token: aGVsbG8NCg==
+kind: Secret
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: default/cloudflare-api-token-secret
+  labels:
+    app: lan
+  name: cloudflare-api-token-secret
+  namespace: lan
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway
+  namespace: velero-ui
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: velero.frostbit.in
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - protocol: HTTPS
+    hostname: velero.frostbit.in
+    port: 443
+    name: https
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route
+  namespace: velero-ui
+spec:
+  parentRefs:
+  - name: gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: vui-ui-clusterip
+      namespace: velero-ui
+      port: 3000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: vui-api-clusterip
+      namespace: velero-ui
+      port: 8001
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ws
+    backendRefs:
+    - name: vui-api-clusterip
+      namespace: velero-ui
+      port: 8001
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: vui
+    meta.helm.sh/release-namespace: velero-ui
+  labels:
+    app.kubernetes.io/instance: vui
+    app.kubernetes.io/name: vui
+    app.kubernetes.io/version: 0.1.14
+  name: vui-ui-clusterip
+  namespace: velero-ui
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    layer: webserver
+    app.kubernetes.io/instance: vui
+    app.kubernetes.io/name: vui
+  type: LoadBalancer
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: vui
+    meta.helm.sh/release-namespace: velero-ui
+  labels:
+    app.kubernetes.io/instance: vui
+    app.kubernetes.io/name: vui
+    app.kubernetes.io/version: 0.1.14
+  name: vui-api-clusterip
+  namespace: velero-ui
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 8001
+    protocol: TCP
+    targetPort: 8001
+  selector:
+    app: velero-api
+    app.kubernetes.io/instance: vui
+    app.kubernetes.io/name: vui
+  type: LoadBalancer
+
+---
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  name: tunnel
+  namespace: velero-ui
+subjects:
+  - name: cilium-gateway-gateway
+    spec:
+      fqdn: velero.frostbit.in
+      target: http://cilium-gateway-gateway.velero-ui.svc:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel
+
+
+

@@ -1,0 +1,45 @@
+
+global:
+  veleroNamespace: velero
+  clusterName: kubernetes
+apiConfig:
+
+  veleroCliVersion: v1.14.1
+  storage:
+    enabled: false
+
+  origins1: "https://velero.frostbit.in" # for allowing CORS
+  apiRateLimiterL1: 60:1200
+  # To generate a fixed secure random secret key use the command: openssl rand -hex 32
+  securityTokenKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+uiNp:
+  enabled: false
+  apiPort: "443"
+  uiPort: "443"
+
+uiIngress:
+  enabled: true
+  spec:
+    tls:
+    - hosts:
+      - velero.frostbit.in
+    
+
+
+report:
+  schedule: 0 8 * * *
+
+
+watchdogConfig:
+
+  k8SInclusterMode: "True"
+  processClusterName: kubernetes
+  notificationSkipCompleted: "False"
+
+
+ui:
+  replicas: 1
+  type: ClusterIP
+
