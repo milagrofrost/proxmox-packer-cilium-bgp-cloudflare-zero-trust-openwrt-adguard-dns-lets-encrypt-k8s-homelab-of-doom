@@ -24,6 +24,8 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: smb.frostbit.in
   labels:
     app: smb
     service-type: internal
