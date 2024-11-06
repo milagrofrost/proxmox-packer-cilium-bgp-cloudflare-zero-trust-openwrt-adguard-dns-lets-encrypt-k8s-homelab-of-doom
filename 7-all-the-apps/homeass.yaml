@@ -109,3 +109,70 @@ spec:
           claimName: nfs
 ---
 
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: homeass
+  name: gateway
+  namespace: homeass
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: homeass.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: homeass.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-homeass
+---
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app: homeass
+  name: route
+  namespace: homeass
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: homeass
+  rules:
+  - backendRefs:
+    - name: service
+      port: 8123
+    matches: null
+
+---
+
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  labels:
+    app: homeass
+  name: tunnel
+  namespace: homeass
+subjects:
+- name: gateway
+  spec:
+    fqdn: homeass.frostbit.in
+    target: http://cilium-gateway-gateway.homeass.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel
