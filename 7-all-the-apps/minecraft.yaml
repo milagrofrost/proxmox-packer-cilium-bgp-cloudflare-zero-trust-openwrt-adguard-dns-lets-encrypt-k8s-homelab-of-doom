@@ -87,11 +87,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: librenms
+      app: minecraft
   template:
     metadata:
       labels:
-        app: librenms
+        app: minecraft
     spec:
       volumes:
         - name: persist
