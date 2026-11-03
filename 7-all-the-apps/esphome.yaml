@@ -94,7 +94,7 @@ spec:
         app: esphome
     spec:
       containers:
-      - image: esphome/esphome
+      - image: docker.io/esphome/esphome@sha256:c994a49a945094643b14c213bfd500a95ffed94cd68848772828192e126bd375
         name: container
         ports:
         - containerPort: 6052

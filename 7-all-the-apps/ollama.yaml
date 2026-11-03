@@ -94,7 +94,7 @@ spec:
         app: ollama
     spec:
       containers:
-      - image: ollama/ollama
+      - image: docker.io/ollama/ollama@sha256:ebaef4f4c5d93660e1f25f8ad085a112f51ccfb0e8458073e71793959dba91c9
         name: container
         ports:
         - containerPort: 11434

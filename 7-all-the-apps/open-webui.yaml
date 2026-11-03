@@ -94,7 +94,7 @@ spec:
         app: open-webui
     spec:
       containers:
-      - image: ghcr.io/open-webui/open-webui:main
+      - image: ghcr.io/open-webui/open-webui@sha256:ff2413bfd918b5cd198c4a7ea3a8eed9e215430298ee6076ed4c3d57c96a435d
         name: container
         ports:
         - containerPort: 8080

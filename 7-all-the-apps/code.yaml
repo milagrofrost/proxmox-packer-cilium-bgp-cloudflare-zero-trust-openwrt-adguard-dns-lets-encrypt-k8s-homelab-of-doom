@@ -94,7 +94,7 @@ spec:
         app: code
     spec:
       containers:
-      - image: linuxserver/code-server
+      - image: docker.io/linuxserver/code-server@sha256:ec8f01d91c93a5d615224a306914c3ea9190c6237f876383591bca676a24fa67
         name: container
         ports:
         - containerPort: 8443
