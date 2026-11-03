@@ -54,5 +54,5 @@ spec:
           value: America/New_York
         - name: IP6_PROVIDER
           value: none
-        image: favonia/cloudflare-ddns:latest
+        image: docker.io/favonia/cloudflare-ddns@sha256:345b41895a8846d74c62d30bd27e61101a754f8ab8da10c68115823883803afb
         name: container

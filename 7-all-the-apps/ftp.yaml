@@ -156,7 +156,7 @@ spec:
         app: ftp
     spec:
       containers:
-      - image: gists/pure-ftpd
+      - image: docker.io/gists/pure-ftpd@sha256:4de79a4a576cd428818b1938e96ef92cd14c4b732dc762efaec16b87e2049fff
         name: container
         ports:
           - containerPort: 21

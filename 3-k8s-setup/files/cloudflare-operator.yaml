@@ -19,7 +19,7 @@ spec:
     secret: cloudflare-secrets # interlinked
   existingTunnel: {}
   fallbackTarget: http_status:404
-  image: cloudflare/cloudflared:2024.9.1
+  image: cloudflare/cloudflared:2026.10.7
   newTunnel:
     name: k8s-cluster-tunnel
   noTlsVerify: false

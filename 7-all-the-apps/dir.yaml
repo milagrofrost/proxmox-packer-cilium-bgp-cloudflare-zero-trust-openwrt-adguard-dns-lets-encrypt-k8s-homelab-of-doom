@@ -126,7 +126,7 @@ spec:
         app: dir
     spec:
       containers:
-      - image: jlesage/qdirstat
+      - image: docker.io/jlesage/qdirstat@sha256:0140012c4fb35c90eed555459562ee2179e0c23f9bc2c5a50aed226fcaadfe84
         name: container
         ports:
         - containerPort: 5800

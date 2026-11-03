@@ -131,7 +131,7 @@ spec:
         app: plex
     spec:
       containers:
-      - image: linuxserver/plex
+      - image: docker.io/linuxserver/plex@sha256:0c2f1122a4275efeea953a9882359f3809b27279d3c3022392e8e610a2eccc67
         name: container
         env:
         - name: HOSTNAME

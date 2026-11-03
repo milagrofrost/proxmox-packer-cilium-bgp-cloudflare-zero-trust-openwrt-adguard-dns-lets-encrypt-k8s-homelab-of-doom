@@ -95,7 +95,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - image: homeassistant/home-assistant:stable
+      - image: docker.io/homeassistant/home-assistant@sha256:c11dd7c74039223c43079d700aa559d6dc61e8e0b38a08d651f91d1bc550cff5
         name: container
         ports:
         - containerPort: 8123

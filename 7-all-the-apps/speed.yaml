@@ -94,7 +94,7 @@ spec:
         app: speed
     spec:
       containers:
-      - image: linuxserver/speedtest-tracker
+      - image: docker.io/linuxserver/speedtest-tracker@sha256:14d56d7c4ff0af18f0a09be8494352ba40d23196e78c5f812cee69afaa1edc45
         name: container
         env:
         - name: APP_KEY

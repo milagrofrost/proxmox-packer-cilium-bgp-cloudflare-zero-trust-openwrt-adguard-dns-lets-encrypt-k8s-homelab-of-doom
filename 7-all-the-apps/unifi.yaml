@@ -112,7 +112,7 @@ spec:
         app: unifi
     spec:
       containers:
-      - image: linuxserver/unifi-controller:latest
+      - image: docker.io/linuxserver/unifi-controller@sha256:0ae315a3a45635e443899e30e86bd507c2c48922cb27f4bc7241777885f4650e
         name: container
         ports:
           - containerPort: 10001

@@ -29,7 +29,7 @@ gcloud iam service-accounts keys create credentials-velero --iam-account $SERVIC
 
 velero install `
     --provider gcp `
-    --plugins velero/velero-plugin-for-gcp:v1.10.1 `
+    --plugins velero/velero-plugin-for-gcp:v1.14.4 `
     --bucket "frostbit-k8s-backup-velero" `
     --secret-file ./credentials-velero.json
 

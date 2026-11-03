@@ -18,9 +18,9 @@ This will create a cert-manager issuer that uses cloudflare for domain validatio
   helm repo add jetstack https://charts.jetstack.io
   helm repo update
 
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.crds.yaml
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.21.3/cert-manager.crds.yaml
 
-  helm install cert-manager jetstack/cert-manager --version v1.15.0 \
+  helm install cert-manager jetstack/cert-manager --version v1.21.3 \
     --namespace cert-manager --create-namespace \
     --set "extraArgs={--enable-gateway-api}"
   ```

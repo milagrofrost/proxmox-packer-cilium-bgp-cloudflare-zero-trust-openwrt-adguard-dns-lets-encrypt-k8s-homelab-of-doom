@@ -1,7 +1,7 @@
 # Kubernetes Setup with Cilium
 
 ## Prerequisites
-- Tested on `kubectl` 1.30.5
+- Tested on `kubectl` 1.36.6
 - This is an abridged setup guide, but get familiar with k8s and cilium documentation as well.  For when things go wrong....
 
 ## Setup Instructions
@@ -81,12 +81,12 @@ Y. **Disabling AppArmor**
 6. **Install Experimental Gateway API:**
     - This is needed for the Cilium Gateway API to work.  Installing version `1.2.0-rc2` for support of applying labels to services created by the Gateway API.
     ```sh
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_gatewayclasses.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_gateways.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_httproutes.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_referencegrants.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_grpcroutes.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.1.0/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_gatewayclasses.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_gateways.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_httproutes.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_referencegrants.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_grpcroutes.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.3/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
     ```
 
 7. **Install Cilium with Helm:**
@@ -94,7 +94,7 @@ Y. **Disabling AppArmor**
     - At this time of documentation cilium version `1.16.1` is what was latest and tested in this setup
     ```sh
     helm repo add cilium https://helm.cilium.io/
-    helm install cilium cilium/cilium --version 1.16.1 --namespace kube-system \
+    helm install cilium cilium/cilium --version 1.20.4 --namespace kube-system \
         --set k8sServiceHost="10.10.101.251" \
         --set k8sServicePort="6443" \
         --set kubeProxyReplacement=true \
@@ -126,7 +126,7 @@ Y. **Disabling AppArmor**
 10. **Apply Load Balancer IP Pool**
    - Ensure that the `cidr` is not overlapping with any existing networks
 ```yaml
-apiVersion: cilium.io/v2alpha1
+apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
   labels:

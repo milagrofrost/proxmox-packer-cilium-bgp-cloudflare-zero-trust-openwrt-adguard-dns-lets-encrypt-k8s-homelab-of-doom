@@ -1,0 +1,155 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mybibliotheca
+  labels:
+    app: mybibliotheca
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+  name: nfs-mybibliotheca
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2000Gi
+  nfs:
+    path: /nfsshare/apps/mybibliotheca
+    server: 10.10.101.210
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+  name: nfs
+  namespace: mybibliotheca
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  volumeName: nfs-mybibliotheca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+    service-type: internal
+  name: service
+  namespace: mybibliotheca
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: mybibliotheca
+    port: 5054
+    targetPort: 5054
+  selector:
+    app: mybibliotheca
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+  name: deploy
+  namespace: mybibliotheca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mybibliotheca
+  template:
+    metadata:
+      labels:
+        app: mybibliotheca
+    spec:
+      containers:
+      - image: docker.io/pickles4evaaaa/mybibliotheca@sha256:589615652f54d2877da128f192f72ade69a3b4c9f3340b177e546a3e464d3cd4
+        name: container
+        ports:
+        - containerPort: 5054
+        volumeMounts:
+        - mountPath: /configs
+          name: persist
+          readOnly: false
+      volumes:
+      - name: persist
+        persistentVolumeClaim:
+          claimName: nfs
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+  labels:
+    app: mybibliotheca
+  name: gateway
+  namespace: mybibliotheca
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: mybibliotheca.frostbit.in
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+  - hostname: mybibliotheca.frostbit.in
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: secret-tls-mybibliotheca
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+  name: route
+  namespace: mybibliotheca
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: mybibliotheca
+  rules:
+  - backendRefs:
+    - name: service
+      port: 5054
+    matches: null
+---
+apiVersion: networking.cfargotunnel.com/v1alpha1
+kind: TunnelBinding
+metadata:
+  annotations: {}
+  labels:
+    app: mybibliotheca
+  name: tunnel
+  namespace: mybibliotheca
+subjects:
+- name: gateway
+  spec:
+    fqdn: mybibliotheca.frostbit.in
+    target: http://cilium-gateway-gateway.mybibliotheca.svc.cluster.local:80
+tunnelRef:
+  kind: ClusterTunnel
+  name: k8s-cluster-tunnel

@@ -32,7 +32,7 @@ webhook-provider-url: http://localhost:8888
 
 sidecars:
 - name: adguard-webhook
-  image: ghcr.io/muhlba91/external-dns-provider-adguard
+  image: "ghcr.io/muhlba91/external-dns-provider-adguard@sha256:a119f729b16d435769aefcd9d4be149d4be7142848439bafd45e4045aa0b2e4e"
   ports:
   - containerPort: 8888
     name: http

@@ -16,7 +16,7 @@ Dont take my word for it, read up on it!!  https://docs.cilium.io/en/stable/netw
 # kubectl get ciliumbgpadvertisements.cilium.io -o yaml
 # some values will need to be changed to match your environment
 
-apiVersion: cilium.io/v2alpha1
+apiVersion: cilium.io/v2
 kind: CiliumBGPAdvertisement
 metadata:
   labels:
@@ -40,7 +40,7 @@ spec:
 BGP cluster configs are where you 1-to-1 map the Cilium BGP peer to the router BGP peer.  This is where you define the ASN, peer address, and peer ASN.  The `nodeSelector` is used to select which nodes will participate in the BGP peering.  In this case, only Linux nodes will participate.  This policy applies to all nodes in the cluster.
 ```yaml
 # kubectl get ciliumbgpclusterconfigs.cilium.io cilium-bgp -o yaml
-apiVersion: cilium.io/v2alpha1
+apiVersion: cilium.io/v2
 kind: CiliumBGPClusterConfig
 metadata:
   name: cilium-bgp
@@ -64,7 +64,7 @@ spec:
 The BGP peer config is the last part to enabling BGP peering and advertisements.  
 ```yaml
 # kubectl get ciliumbgppeerconfigs.cilium.io cilium-peer -o yaml
-apiVersion: cilium.io/v2alpha1
+apiVersion: cilium.io/v2
 kind: CiliumBGPPeerConfig
 metadata:
   name: cilium-peer

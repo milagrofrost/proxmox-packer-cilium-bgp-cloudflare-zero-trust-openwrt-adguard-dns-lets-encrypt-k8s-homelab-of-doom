@@ -23,7 +23,7 @@ frostbit.in - DNS:Edit
 
 - Deploy the operator using the following command.
 ```sh
-kubectl apply -k https://github.com/adyanth/cloudflare-operator/config/default
+kubectl apply --server-side -f https://github.com/adyanth/cloudflare-operator/releases/download/v0.14.0/cloudflare-operator.yaml
 ```
 
 ## Deploy the ClusterTunnel
@@ -58,7 +58,7 @@ spec:
     secret: cloudflare-secrets
   existingTunnel: {}
   fallbackTarget: http_status:404
-  image: cloudflare/cloudflared:2024.9.1 # currentlly the latest version
+  image: cloudflare/cloudflared:2026.10.7
   newTunnel:
     name: k8s-cluster-tunnel
   noTlsVerify: false
