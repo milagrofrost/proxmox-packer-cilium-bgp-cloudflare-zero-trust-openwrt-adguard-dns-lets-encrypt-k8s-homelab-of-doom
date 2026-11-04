@@ -75,7 +75,7 @@ spec:
     - ReadWriteMany
   nfs:
     server: 10.10.101.210
-    path: "/nfsshare/media"
+    path: "/nfsshare/nfsshare/media"
 
 ---
 
@@ -163,6 +163,7 @@ spec:
           readOnly: false
         - mountPath: "/media"
           name: media
+          readOnly: true
       volumes:
       - name: persist
         persistentVolumeClaim:

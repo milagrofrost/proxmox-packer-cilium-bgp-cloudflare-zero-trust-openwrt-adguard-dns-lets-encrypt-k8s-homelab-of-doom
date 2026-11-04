@@ -81,7 +81,7 @@ spec:
         ports:
         - containerPort: 5054
         volumeMounts:
-        - mountPath: /configs
+        - mountPath: /app/data
           name: persist
           readOnly: false
       volumes:
