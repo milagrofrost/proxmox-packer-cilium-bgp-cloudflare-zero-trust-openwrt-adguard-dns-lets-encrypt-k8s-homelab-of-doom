@@ -1,12 +1,18 @@
-# Postgres and Redis for MyBibliotheca. Postgres lives on k8s-w2's local disk, not NFS, and is
-# dumped nightly to NFS. Create the secret first, it isn't kept in this repo:
+# Postgres and Redis for MyBibliotheca. Postgres keeps its data on NFS and is also dumped nightly to NFS.
+# Create the secret first, it isn't kept in this repo:
 #   kubectl -n mybibliotheca create secret generic app-env --from-literal=SECRET_KEY=... \
 #     --from-literal=SECURITY_PASSWORD_SALT=... --from-literal=POSTGRES_PASSWORD=...
-# On k8s-w2 first: mkdir -p /var/lib/mybibliotheca-postgres && chown 70:70 /var/lib/mybibliotheca-postgres
+# On the NFS server first. This folder needs its own sync export, because the main export is async and
+# could lose committed database writes in a power cut:
+#   mkdir -p /nfsshare/apps/mybibliotheca-postgres && chown 70:70 /nfsshare/apps/mybibliotheca-postgres && chmod 700 /nfsshare/apps/mybibliotheca-postgres
+#   /etc/fstab: /nfsshare/apps/mybibliotheca-postgres /nfsshare/apps/mybibliotheca-postgres none bind,nofail,x-systemd.requires-mounts-for=/nfsshare 0 0
+#   /etc/exports: /nfsshare/apps/mybibliotheca-postgres 10.10.101.0/24(rw,sync,no_subtree_check,no_root_squash,nohide,fsid=4242)
+# NFSv4 ignores an export on a plain subfolder and keeps using the async parent, so the bind mount is needed.
+# Check with pgbench: about 30 tps on this disk means sync is working, and hundreds means it isn't.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: local-mybibliotheca-postgres
+  name: nfs-mybibliotheca-postgres
 spec:
   capacity:
     storage: 10Gi
@@ -16,13 +22,10 @@ spec:
   claimRef:
     namespace: mybibliotheca
     name: postgres
-  local:
-    path: /var/lib/mybibliotheca-postgres
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - {key: kubernetes.io/hostname, operator: In, values: [k8s-w2]}
+  mountOptions: [hard, nfsvers=4.1]
+  nfs:
+    server: 10.10.101.210
+    path: /nfsshare/apps/mybibliotheca-postgres
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -32,7 +35,7 @@ metadata:
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: ""
-  volumeName: local-mybibliotheca-postgres
+  volumeName: nfs-mybibliotheca-postgres
   resources:
     requests:
       storage: 10Gi
