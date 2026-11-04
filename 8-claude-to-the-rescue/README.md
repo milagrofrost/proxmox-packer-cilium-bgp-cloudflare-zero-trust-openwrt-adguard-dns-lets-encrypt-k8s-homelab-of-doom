@@ -77,7 +77,7 @@ It stopped at 1.36 rather than the newest release, because Cilium and other key 
 
 - Pinned apps to their running image digests.
 - Replaced the retired Kubernetes Dashboard with Headlamp.
-- Removed what I wasn't using or couldn't fix: Argo CD, LibreNMS, `search`, `notwordle` and the OctoPrint proxy. Their old data is still on NFS.
+- Removed what I wasn't using or couldn't fix: Argo CD, LibreNMS, `search`, `notwordle`, the OctoPrint proxy and the UniFi controller. Their old data is still on NFS.
 
 **NFS server**
 - Installed 226 pending package updates and a new kernel.

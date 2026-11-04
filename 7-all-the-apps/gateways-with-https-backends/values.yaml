@@ -19,12 +19,6 @@ gateways:
     port: 80
     backend_protocol: http
     namespace: kube-system
-  unifi:
-    name: unifi
-    endpoint: service.unifi.svc.cluster.local
-    port: 8443
-    backend_protocol: https
-    namespace: unifi
   kube:
     name: kube
     endpoint: headlamp.kubernetes-dashboard.svc.cluster.local
