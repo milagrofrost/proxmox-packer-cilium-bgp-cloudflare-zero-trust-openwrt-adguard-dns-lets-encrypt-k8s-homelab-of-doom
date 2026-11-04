@@ -76,6 +76,9 @@ The bare minimum requirements to run the core services ⚙️ and not any other 
 - [🌐 All The Apps](7-all-the-apps/README.md)  
   All the apps that I have setup in my k8s cluster. 📦
 
+- [🚑 Claude to the Rescue](8-claude-to-the-rescue/README.md)  
+  How Claude Code got this homelab healthy again after a year or more of hobbling along. 🤖
+
 
 ## 👤 Who am I?
 
