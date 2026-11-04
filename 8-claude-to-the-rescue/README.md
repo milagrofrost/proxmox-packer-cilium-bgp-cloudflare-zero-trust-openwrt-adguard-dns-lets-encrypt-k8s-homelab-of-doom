@@ -8,6 +8,14 @@ Claude did the hands-on work over SSH. I answered questions, made the calls, and
 
 > ⚠️ **This was written right after the work, not after weeks of stability.** See [Not proven yet](#-not-proven-yet).
 
+## 💍 Let's be clear: I could have fixed this myself
+
+I could have done all of this on my own, in a week or two of 2-hour late night sessions between the kids going to bed and me going to bed.
+
+But the honeymoon of creating the lab is over for me. We're fully in this marriage now: kids, mortgage, car loans and all. We're in maintain mode, and it's not glamorous. It takes work, but it's important to do if you want to keep a healthy homelab.
+
+Thankfully, AI is here to help. It can be your "junior" engineer, while you, the "senior" engineer, kick your feet up, play video games, and give it your all-knowing and trusted direction. 😎
+
 ## 📊 The numbers
 
 | | |
