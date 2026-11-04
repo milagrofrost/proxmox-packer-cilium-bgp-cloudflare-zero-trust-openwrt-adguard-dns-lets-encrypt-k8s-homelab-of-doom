@@ -13,12 +13,6 @@ gateways:
     port: 8080
     backend_protocol: http
     namespace: default
-  octopi:
-    name: octopi
-    endpoint: 10.10.101.200
-    port: 80
-    backend_protocol: http
-    namespace: default
   hubble:
     name: hubble
     endpoint: hubble-ui.kube-system.svc.cluster.local
@@ -33,9 +27,9 @@ gateways:
     namespace: unifi
   kube:
     name: kube
-    endpoint: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local
-    port: 443
-    backend_protocol: https
+    endpoint: headlamp.kubernetes-dashboard.svc.cluster.local
+    port: 80
+    backend_protocol: http
     namespace: kubernetes-dashboard
   c30:
     name: c30

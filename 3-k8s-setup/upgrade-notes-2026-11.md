@@ -22,7 +22,7 @@ Kubernetes and Cilium move one minor version at a time, and each Cilium version 
 - **Home Assistant keeps its history in SQLite on NFS.** It has been corrupted repeatedly. Consider moving it to MariaDB.
 
 ## Removed
-Argo CD, `guestbook` and Kubernetes Dashboard. `kube.frostbit.in` now serves Headlamp (chart 0.46.0) from the `kubernetes-dashboard` namespace.
+Argo CD, `guestbook`, Kubernetes Dashboard, LibreNMS, `search`, `notwordle` and `octopi`. Their old app data is still in `/nfsshare/apps`. `kube.frostbit.in` now serves Headlamp (chart 0.46.0) from the `kubernetes-dashboard` namespace.
 Sign in with a token: `kubectl create token headlamp -n kubernetes-dashboard`.
 
 ## Not done yet
