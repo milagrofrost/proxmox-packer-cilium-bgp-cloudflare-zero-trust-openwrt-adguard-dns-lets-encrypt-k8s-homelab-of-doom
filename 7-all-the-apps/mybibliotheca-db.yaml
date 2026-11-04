@@ -1,0 +1,127 @@
+# Postgres and Redis for MyBibliotheca. Postgres lives on k8s-w2's local disk, not NFS, and is
+# dumped nightly to NFS. Create the secret first, it isn't kept in this repo:
+#   kubectl -n mybibliotheca create secret generic app-env --from-literal=SECRET_KEY=... \
+#     --from-literal=SECURITY_PASSWORD_SALT=... --from-literal=POSTGRES_PASSWORD=...
+# On k8s-w2 first: mkdir -p /var/lib/mybibliotheca-postgres && chown 70:70 /var/lib/mybibliotheca-postgres
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-mybibliotheca-postgres
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: mybibliotheca
+    name: postgres
+  local:
+    path: /var/lib/mybibliotheca-postgres
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - {key: kubernetes.io/hostname, operator: In, values: [k8s-w2]}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres
+  namespace: mybibliotheca
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: local-mybibliotheca-postgres
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: mybibliotheca
+  labels: {app: postgres}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      terminationGracePeriodSeconds: 90
+      containers:
+      - name: postgres
+        image: docker.io/library/postgres@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+        env:
+        - {name: POSTGRES_DB, value: bibliotheca}
+        - {name: POSTGRES_USER, value: bibliotheca}
+        - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: app-env, key: POSTGRES_PASSWORD}
+        ports:
+        - {containerPort: 5432}
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "bibliotheca", "-d", "bibliotheca"]
+          periodSeconds: 10
+        resources:
+          requests: {cpu: 50m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        volumeMounts:
+        - {name: data, mountPath: /var/lib/postgresql/data}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: postgres}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mybibliotheca
+spec:
+  selector: {app: postgres}
+  ports:
+  - {port: 5432, targetPort: 5432}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: mybibliotheca
+  labels: {app: redis}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: redis}
+  template:
+    metadata:
+      labels: {app: redis}
+    spec:
+      containers:
+      - name: redis
+        image: docker.io/library/redis@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+        command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+        ports:
+        - {containerPort: 6379}
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          periodSeconds: 10
+        resources:
+          requests: {cpu: 20m, memory: 64Mi}
+          limits: {memory: 384Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: mybibliotheca
+spec:
+  selector: {app: redis}
+  ports:
+  - {port: 6379, targetPort: 6379}

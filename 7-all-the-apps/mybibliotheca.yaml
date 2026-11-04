@@ -75,8 +75,29 @@ spec:
       labels:
         app: mybibliotheca
     spec:
+      # A Service named redis would otherwise inject REDIS_PORT=tcp://..., which the app reads as a port number and crashes.
+      enableServiceLinks: false
       containers:
       - image: docker.io/pickles4evaaaa/mybibliotheca@sha256:589615652f54d2877da128f192f72ade69a3b4c9f3340b177e546a3e464d3cd4
+        env:
+        - {name: KUZU_DB_PATH, value: /app/data/kuzu}
+        - {name: GRAPH_DATABASE_ENABLED, value: "true"}
+        - {name: CACHE_REDIS_URL, value: "redis://redis:6379/1"}
+        - {name: KUZU_REDIS_CACHE_ENABLED, value: "true"}
+        - {name: POSTGRES_HOST, value: postgres}
+        - {name: POSTGRES_PORT, value: "5432"}
+        - {name: POSTGRES_DB, value: bibliotheca}
+        - {name: POSTGRES_USER, value: bibliotheca}
+        - {name: AUTO_MIGRATE, value: "false"}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: app-env, key: POSTGRES_PASSWORD}
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef: {name: app-env, key: SECRET_KEY}
+        - name: SECURITY_PASSWORD_SALT
+          valueFrom:
+            secretKeyRef: {name: app-env, key: SECURITY_PASSWORD_SALT}
         name: container
         ports:
         - containerPort: 5054
