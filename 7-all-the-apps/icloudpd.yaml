@@ -1,0 +1,137 @@
+# iCloud Photos backup, one deployment per account, using boredazfcuk/icloudpd.
+# Each account's settings, including its Apple ID and Telegram details, are in
+# icloudpd.conf in that account's NFS config folder. They aren't in this repo.
+# Photos go to /nfsshare/nfsshare/backups/<name>_icloudpd, and the Pi snapshots them nightly.
+# Sign in or renew by running /opt/icloudpd/bin/icloudpd --auth-only in the pod, with the account's Apple ID, then restart the pod.
+# The image's sync-icloud.sh --Initialise may never send a 2FA prompt to the phone.
+apiVersion: v1
+kind: Namespace
+metadata: {name: icloudpd}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: {name: nfs-icloudpd-matt-config}
+spec:
+  capacity: {storage: 1Gi}
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef: {namespace: icloudpd, name: matt-config}
+  nfs: {server: 10.10.101.210, path: /nfsshare/apps/icloudpd-matt}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: matt-config, namespace: icloudpd}
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: ""
+  volumeName: nfs-icloudpd-matt-config
+  resources: {requests: {storage: 1Gi}}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: {name: nfs-icloudpd-matt-photos}
+spec:
+  capacity: {storage: 2Ti}
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef: {namespace: icloudpd, name: matt-photos}
+  nfs: {server: 10.10.101.210, path: /nfsshare/nfsshare/backups/matt_icloudpd}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: matt-photos, namespace: icloudpd}
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: ""
+  volumeName: nfs-icloudpd-matt-photos
+  resources: {requests: {storage: 2Ti}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: icloudpd-matt, namespace: icloudpd, labels: {app: icloudpd-matt}}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: icloudpd-matt}}
+  template:
+    metadata: {labels: {app: icloudpd-matt}}
+    spec:
+      hostname: icloudpd-matt
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: icloudpd
+        image: docker.io/boredazfcuk/icloudpd@sha256:5e41ec907dff6106ab443ebdc92f87e12c2b35d49c7ab0bd14f9d68c9527752f
+        env: [{name: TZ, value: America/New_York}]
+        resources: {requests: {cpu: 50m, memory: 256Mi}, limits: {memory: 2Gi}}
+        volumeMounts:
+        - {name: config, mountPath: /config}
+        - {name: photos, mountPath: /home/user/iCloud}
+      volumes:
+      - {name: config, persistentVolumeClaim: {claimName: matt-config}}
+      - {name: photos, persistentVolumeClaim: {claimName: matt-photos}}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: {name: nfs-icloudpd-amanda-config}
+spec:
+  capacity: {storage: 1Gi}
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef: {namespace: icloudpd, name: amanda-config}
+  nfs: {server: 10.10.101.210, path: /nfsshare/apps/icloudpd-amanda}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: amanda-config, namespace: icloudpd}
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: ""
+  volumeName: nfs-icloudpd-amanda-config
+  resources: {requests: {storage: 1Gi}}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: {name: nfs-icloudpd-amanda-photos}
+spec:
+  capacity: {storage: 2Ti}
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef: {namespace: icloudpd, name: amanda-photos}
+  nfs: {server: 10.10.101.210, path: /nfsshare/nfsshare/backups/amanda_icloudpd}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: amanda-photos, namespace: icloudpd}
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: ""
+  volumeName: nfs-icloudpd-amanda-photos
+  resources: {requests: {storage: 2Ti}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: icloudpd-amanda, namespace: icloudpd, labels: {app: icloudpd-amanda}}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: icloudpd-amanda}}
+  template:
+    metadata: {labels: {app: icloudpd-amanda}}
+    spec:
+      hostname: icloudpd-amanda
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: icloudpd
+        image: docker.io/boredazfcuk/icloudpd@sha256:5e41ec907dff6106ab443ebdc92f87e12c2b35d49c7ab0bd14f9d68c9527752f
+        env: [{name: TZ, value: America/New_York}]
+        resources: {requests: {cpu: 50m, memory: 256Mi}, limits: {memory: 2Gi}}
+        volumeMounts:
+        - {name: config, mountPath: /config}
+        - {name: photos, mountPath: /home/user/iCloud}
+      volumes:
+      - {name: config, persistentVolumeClaim: {claimName: amanda-config}}
+      - {name: photos, persistentVolumeClaim: {claimName: amanda-photos}}
