@@ -43,7 +43,7 @@ Thankfully, AI is here to help. It can be your "junior" engineer, while you, the
 
 Some problems were doing a nice job of hiding the others:
 
-- A USB drive was resetting because of a driver problem, and it has since failed two long SMART tests. It's a laptop drive I'd plugged in as a temporary fix when I ran out of space. It then became the home for the new VM backups, so it needs to go.
+- A USB drive was resetting because of a driver problem, and it has since failed two long SMART tests. It's a laptop drive I'd plugged in as a temporary fix when I ran out of space. It then became the home for the new VM backups, so it needs to go. *Update: it's retired, and the VM backups now go to the Raspberry Pi.*
 - The host kept dropping off the network. Claude first suspected a crash, but it was an Intel NIC hanging, 175 times in the logs.
 - A smart plug was holding the Proxmox host's IP address, because my DHCP range overlapped it.
 
@@ -122,12 +122,13 @@ Giving an AI root on your network is a real trust decision, and this could have 
 
 ## 🧪 Not proven yet
 
-When this was written:
+Updated the next day, November 5:
 
-- The first scheduled overnight run of all the new backups and the health report hadn't happened yet.
-- The NIC workaround hadn't been tested under a heavy load.
-- The USB drive is still failing and still holds the VM backups. Moving them to the NFS server and retiring that drive is next.
-- Both NFS drives are in one Raspberry Pi, so a power or hardware failure could take out the live data and its backup together. There's still no off-site copy of the app data.
+- ✅ **The first scheduled overnight run worked.** The VM backups to the Raspberry Pi, the database dump, the nightly app and photo snapshots and the morning health report all ran on their own.
+- ✅ **The failing USB drive is retired.** The VM backups moved to the Raspberry Pi first, and the drive then dropped off USB by itself.
+- 🟡 **The NIC workaround has held so far.** No hangs in 36 hours, which included about 85 GB of VM backups sent over it. One quiet day isn't proof.
+- 🟡 **The Pi's backup drive hasn't passed a full SMART test.** Its health counters are clean, but both long tests were aborted partway, and the cause is unknown.
+- ❌ **Everything still lives in one place.** Both NFS drives are in one Raspberry Pi, so a power or hardware failure could take out the live data and its backup together. There's still no off-site copy of the app data.
 
 ## 📝 What I'm taking away
 
